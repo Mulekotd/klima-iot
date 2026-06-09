@@ -1,4 +1,16 @@
+<<<<<<< HEAD
 # IDE
+=======
+# Environment variables
+.env
+.venv
+
+# Cache files and directories
+__pycache__/
+.python-version
+
+# IDE directories
+>>>>>>> eb5c86c5aad0ebe207a64f34a010db961b8680e1
 .vscode/
 
 # Python
