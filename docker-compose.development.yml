@@ -10,8 +10,6 @@ services:
       - "5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - klima-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
@@ -19,9 +17,32 @@ services:
       timeout: 10s
       retries: 3
 
-  volumes:
-    postgres_data:
+  frontend:
+    build:
+      context: .
+      dockerfile: dockerfiles/frontend
+    container_name: klima_frontend
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
 
-  networks:
-    absortech-network:
-      driver: bridge
+  redis:
+    image: redis:7-alpine
+    container_name: klima_redis
+    expose:
+      - "6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+  redis_data:
