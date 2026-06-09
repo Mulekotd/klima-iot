@@ -1,0 +1,22 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 512 512"
+  role="img"
+  aria-labelledby="title description"
+>
+  <title id="title">Klima</title>
+  <desc id="description">
+    Símbolo do Klima com três fluxos de ar em verde-lima.
+  </desc>
+  <circle cx="256" cy="256" r="240" fill="#0b2d29" />
+  <g
+    fill="none"
+    stroke="#c8f36c"
+    stroke-linecap="round"
+    transform="rotate(28 256 256)"
+  >
+    <path d="M176 230v52" stroke-width="42" />
+    <path d="M256 196v120" stroke-width="42" />
+    <path d="M336 152v208" stroke-width="42" />
+  </g>
+</svg>

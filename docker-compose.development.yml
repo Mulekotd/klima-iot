@@ -1,7 +1,9 @@
+version: '3.9'
+
 services:
   database:
     image: postgres:15-alpine
-    container_name: klima_db
+    container_name: klima-db
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -21,7 +23,7 @@ services:
     build:
       context: .
       dockerfile: dockerfiles/frontend
-    container_name: klima_frontend
+    container_name: klima-frontend
     environment:
       - NODE_ENV=development
       - PORT=3000
@@ -31,7 +33,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: klima_redis
+    container_name: klima-redis
     expose:
       - "6379"
     volumes:
