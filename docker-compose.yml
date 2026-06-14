@@ -75,6 +75,46 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  api:
+    build:
+      context: .
+      dockerfile: dockerfiles/api
+    container_name: klima-api
+    environment:
+      - PORT=8000
+    ports:
+      - "8000:8000"
+    networks:
+      - klima-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+
   redis:
     image: redis:7-alpine
     container_name: klima-redis

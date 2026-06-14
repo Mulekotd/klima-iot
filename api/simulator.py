@@ -3,10 +3,16 @@ from pydantic import BaseModel
 import asyncio
 import random
 
-app = FastAPI(title="Klima simulator")
+app = FastAPI(title="Klima Simulator")
 
 off_hardware = False # Simula problema no Hardware
 off_sensors = False  # Simula problema nos Sensores
+
+
+@app.get("/health", include_in_schema=False)
+async def health_check():
+    return {"status": "ok"}
+
 
 # Dados do frontend
 class ControlCommand(BaseModel):

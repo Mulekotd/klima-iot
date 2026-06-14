@@ -1,0 +1,33 @@
+FROM python:3.14-slim AS builder
+
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv \
+    UV_LINK_MODE=copy \
+    UV_NO_CACHE=1
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir uv
+
+COPY api/pyproject.toml api/uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
+
+FROM python:3.14-slim AS runtime
+
+ENV PATH="/opt/venv/bin:${PATH}" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PORT=8000
+
+WORKDIR /app
+
+RUN groupadd --system klima \
+    && useradd --system --gid klima --home-dir /app klima
+
+COPY --from=builder /opt/venv /opt/venv
+COPY --chown=klima:klima api/simulador.py ./
+
+USER klima
+
+EXPOSE 8000
+
+CMD ["sh", "-c", "exec uvicorn simulador:app --host 0.0.0.0 --port ${PORT:-8000}"]
