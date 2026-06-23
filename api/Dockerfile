@@ -10,7 +10,7 @@ WORKDIR /app
 
 RUN pip install --no-cache-dir uv
 
-COPY api/pyproject.toml api/uv.lock ./
+COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
 FROM python:${PYTHON_VERSION}-slim AS runtime
@@ -30,7 +30,7 @@ RUN groupadd --system klima \
     && useradd --system --gid klima --home-dir /app klima
 
 COPY --from=builder /opt/venv /opt/venv
-COPY --chown=klima:klima api/app ./app
+COPY --chown=klima:klima app ./app
 
 USER klima
 

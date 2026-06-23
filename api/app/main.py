@@ -1,7 +1,7 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.core.security import configure_security
 from app.routes import control, devices, telemetry
 
 
@@ -12,17 +12,15 @@ def create_app() -> FastAPI:
         description="Backend API for Klima IoT air conditioner telemetry and control.",
     )
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=list(settings.cors_origins),
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    configure_security(app)
 
-    @app.get("/health", include_in_schema=False)
+    @app.get("/health", tags=["health"], summary="Application health check")
     async def health_check() -> dict[str, str]:
-        return {"status": "ok"}
+        return {
+            "status": "ok",
+            "service": settings.app_name,
+            "version": settings.version,
+        }
 
     @app.get("/", include_in_schema=False)
     async def root() -> dict[str, str]:
@@ -30,6 +28,7 @@ def create_app() -> FastAPI:
             "name": settings.app_name,
             "status": "ok",
             "docs": "/docs",
+            "health": "/health",
         }
 
     app.include_router(telemetry.router, prefix=settings.api_prefix)
