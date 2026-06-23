@@ -1,7 +1,17 @@
+import os
 import requests
 
-# URL base para o servidor Uvicorn local
-BASE_URL = "http://127.0.0.1:8000/api"
+
+def get_base_url():
+    try:
+        return os.environ["BASE_URL"].rstrip("/")
+    except KeyError:
+        raise SystemExit(
+            "Defina a variável de ambiente BASE_URL antes de executar este teste."
+        ) from None
+
+
+BASE_URL = get_base_url()
 
 def test_telemetry():
     """Realiza uma requisição GET para buscar dados dos sensores."""

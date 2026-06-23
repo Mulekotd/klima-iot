@@ -1600,6 +1600,8 @@ svg {
 .auth-temp sup {
   font-size: 20px;
   letter-spacing: 0;
+  position: relative;
+  top: 5px;
   vertical-align: top;
 }
 
