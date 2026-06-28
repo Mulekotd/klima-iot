@@ -24,7 +24,7 @@ RUN groupadd --system klima \
     && useradd --system --gid klima --home-dir /app klima
 
 COPY --from=builder /opt/venv /opt/venv
-COPY --chown=klima:klima api/simulator.py ./
+COPY --chown=klima:klima api/ ./
 
 USER klima
 

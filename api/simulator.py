@@ -1,62 +1,86 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-import asyncio
-import random
+from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from ORM import Base, engine, async_session
+from routers.control import router as control_router
+from routers.telemetry import router as telemetry_router
 
-app = FastAPI(title="Klima Simulator")
+# Para compatibilidade retroativa com scripts ou testes que importem diretamente do simulator:
+from schemas import ControlCommand, Telemetry
 
-off_hardware = False # Simula problema no Hardware
-off_sensors = False  # Simula problema nos Sensores
+from fastapi.middleware.cors import CORSMiddleware
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Cria as tabelas se elas não existirem no Postgres
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+
+app = FastAPI(title="Klima Simulator", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# Registro dos Roteadores sob o prefixo /api
+app.include_router(control_router, prefix="/api")
+app.include_router(telemetry_router, prefix="/api")
+
+# Dependência get_db exposta para compatibilidade com o conftest.py
+from ORM import get_db
 
 @app.get("/health", include_in_schema=False)
 async def health_check():
     return {"status": "ok"}
 
+# --- Handlers de Exceção Globais ---
+import logging
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from sqlalchemy.exc import SQLAlchemyError
 
-# Dados do frontend
-class ControlCommand(BaseModel):
-    power: bool
-    target_temperature: float
-    timer_minutes: int  # Tempo para o ar-condicionado desligar
-    reset_filter: bool  # Redefinir tempo após limpeza do filtro
-    
-# Dados do Hardware
-class Telemetry(BaseModel):
-    current_temperature: float
-    current_humidity: float
-    motion_detected: bool
-    filter_hours_used: float
+logger = logging.getLogger("klima")
 
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc: RequestValidationError):
+    logger.warning(f"Erro de validação de payload: {exc.errors()}")
+    return JSONResponse(
+        status_code=422,
+        content={
+            "status": "error",
+            "message": "Dados enviados são inválidos para o contrato estabelecido.",
+            "details": exc.errors()
+        }
+    )
 
-@app.post("/api/control")
-async def send_command(command: ControlCommand):
-    # Simula o tempo de resposta da rede local (0.2s a 2s)
-    await asyncio.sleep(random.uniform(0.2, 2))
-    
-    # Injeção de falha: 20% de chance de simular hardware offline
-    if off_hardware:
-        raise HTTPException(status_code=504, detail="Gateway Timeout - Hardware did not respond")
+@app.exception_handler(SQLAlchemyError)
+async def sqlalchemy_exception_handler(request, exc: SQLAlchemyError):
+    logger.error(f"Falha de banco de dados no simulador: {str(exc)}")
+    return JSONResponse(
+        status_code=503,
+        content={
+            "status": "error",
+            "message": "Serviço temporariamente indisponível devido a falha no banco de dados."
+        }
+    )
 
-    return {"status": "success", "command_registered": command}
-
-
-
-@app.get("/api/telemetry", response_model=Telemetry)
-async def read_sensors():
-    # Simula o tempo de processamento do microcontrolador
-    await asyncio.sleep(random.uniform(0.2, 2))
-    
-    # Gera dados de temperatura com pequenas flutuações
-    temperature = 22.0 + random.uniform(-0.5, 0.5)
-    
-    # Injeção de falha: 20% de chance do sensor de temperatura falhar (retorna NaN)
-    if off_sensors:
-         raise HTTPException(status_code=504, detail="Gateway Timeout - Sensors did not respond")
-
-    return Telemetry(
-        current_temperature=temperature,
-        current_humidity=65.5 + random.uniform(-2.0, 2.0),
-        motion_detected=random.choice([True, False]),
-        filter_hours_used= random.uniform(15.0,150.0)
+@app.exception_handler(Exception)
+async def general_exception_handler(request, exc: Exception):
+    logger.error(f"Erro não tratado capturado: {str(exc)}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "status": "error",
+            "message": "Ocorreu um erro interno no servidor."
+        }
     )

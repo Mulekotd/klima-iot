@@ -1,0 +1,10 @@
+api/.venv/
+api/.pytest_cache/
+api/__pycache__/
+api/tests/
+api/*.db
+frontend/node_modules/
+frontend/.svelte-kit/
+.git/
+.gitignore
+ROADMAP.md

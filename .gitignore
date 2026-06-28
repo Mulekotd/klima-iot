@@ -49,3 +49,7 @@ yarn-error.log*
 
 # Certificates
 **/*.pem
+
+# Project Roadmap
+/ROADMAP.md
+
